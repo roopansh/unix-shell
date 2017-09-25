@@ -10,9 +10,8 @@
 /*
 	Function Declarations for builtin shell commands:
  */
-static int i=0;
 static char ** commands;
-static int commandCount;
+static int commandCount=0;
 int sh_cd(char **args);
 int sh_help(char **args);
 int sh_history(char** args);
@@ -60,8 +59,8 @@ int sh_history(char**args)
 		fprintf(stderr, "sh: expected argument to \"history\"\n");
 	} else {
 		int j;
-		for(j=1;j>0 && j<=atoi(args[1]) && j <= commandCount;j++)
-			printf("%d\t%s\n", j, commands[j]);
+		for(j=0;j<atoi(args[1]) && j < commandCount;j++)
+			printf("%d\t%s\n", j+1, commands[j]);
 	}
 	return 1;
 }
@@ -109,7 +108,7 @@ int sh_launch(char **args)
 	return 1;
 }
 
-int sh_execute(char **args, char **commands)
+int sh_execute(char **args)
 {
 	int i;
 
@@ -220,14 +219,16 @@ void sh_loop(void)
 	int status;
 	commands = (char **)malloc(sizeof(char *)*10);
 	commandCount = 0;
+	char *command;
 	do {
 		printf("> ");
-		commands[i]=sh_read_line();
-		args = sh_split_line(commands[i]);
-		status = sh_execute(args,commands);
-
+		command = sh_read_line();
+		commands[commandCount] = (char *)malloc(sizeof(*command));
+		strcpy(commands[commandCount], command);
+		args = sh_split_line(command);
+		status = sh_execute(args);
 		free(args);
-		i++;
+		free(command);
 		commandCount++;
 	} while (status);
 }
