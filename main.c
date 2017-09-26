@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <dirent.h>
 
 
 /*
@@ -17,6 +18,7 @@ int sh_help(char **args);
 int sh_history(char** args);
 int sh_issue(char **args);
 int sh_rm(char **args);
+int sh_ls(char **args);
 int sh_exit(char **args);
 
 /*
@@ -38,6 +40,7 @@ char *builtin_str[] = {
 	"history",
 	"issue",
 	"rm",
+	"ls",
 	"exit"
 };
 
@@ -47,6 +50,7 @@ int (*builtin_func[]) (char **) = {
 	&sh_history,
 	&sh_issue,
 	&sh_rm,
+	&sh_ls,
 	&sh_exit
 };
 
@@ -133,6 +137,26 @@ int sh_rm(char **args)
 		if (unlink(filename) != 0) {
 			perror("sh");
 		}
+	}
+	return 1;
+}
+
+int sh_ls(char **args)
+{
+	struct dirent **namelist;
+	int n = scandir(".", &namelist, NULL, alphasort);
+	if(n < 0)
+	{
+		perror("sh");
+	}
+	else
+	{
+		while (n--)
+		{
+			printf("%s\n", namelist[n]->d_name);
+			free(namelist[n]);
+		}
+		free(namelist);
 	}
 	return 1;
 }
