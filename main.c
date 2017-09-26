@@ -119,18 +119,28 @@ int sh_execute(char **args)
 
 	for (i = 0; i < sh_num_builtins(); i++) {
 		if (strcmp(args[0], builtin_str[i]) == 0) {
-			if(args[0]=="history")
-				return (*builtin_func[i])(args);
-			else
-				return (*builtin_func[i])(args);
+
+			pid_t pid, wpid;
+			int status;
+
+			pid = fork();
+
+			if (pid == 0) {						// Child process
+				// printf("%s : %d\n", "Child Process", getpid());
+				status = (*builtin_func[i])(args);
+				exit(status);
+			} else if (pid < 0) {				// Error forking
+				perror("sh");
+			} else {							// Parent process
+				waitpid(-1, &status, 0);
+				return WEXITSTATUS(status);
+			}
 		}
 	}
 
-	return sh_launch(args);
+	// if not a builtin function, then run as a linux shell command
+	// return sh_launch(args);
 }
-
-
-
 
 #define sh_TOK_BUFSIZE 64
 #define sh_TOK_DELIM " \t\r\n\a"
@@ -164,15 +174,6 @@ char **sh_split_line(char *line)
 	tokens[position] = NULL;
 	return tokens;
 }
-
-// char *sh_read_line(void)
-// {
-//   char *line = NULL;
-//   ssize_t bufsize = 0; // have getline allocate a buffer for us
-//   getline(&line, &bufsize, stdin);
-//   return line;
-// }
-
 
 #define sh_RL_BUFSIZE 1024
 char *sh_read_line(void)
@@ -212,15 +213,18 @@ char *sh_read_line(void)
 	}
 }
 
+#define sh_HIST_BUFFER 10
 void sh_loop(void)
 {
 	char *line;
 	char **args;
 	int status;
-	commands = (char **)malloc(sizeof(char *)*10);
+	int histSize = sh_HIST_BUFFER;
+	commands = (char **)malloc(sizeof(char *)*histSize);
 	commandCount = 0;
 	char *command;
 	do {
+		// printf("%s : %d\n", "Parent", getpid());
 		printf("> ");
 		command = sh_read_line();
 		commands[commandCount] = (char *)malloc(sizeof(*command));
@@ -230,12 +234,21 @@ void sh_loop(void)
 		free(args);
 		free(command);
 		commandCount++;
+
+		if(commandCount >= histSize){
+			histSize += sh_HIST_BUFFER;
+			commands = realloc(commands, sizeof(char *) * histSize);
+			if(!commands){
+				fprintf(stderr, "%s\n", "sh: allocation error");
+				exit(EXIT_FAILURE);
+			}
+		}
 	} while (status);
 }
 
  int main(int argc, char **argv)
 {
-	
+	system("clear");
 	sh_loop();
 
 	return EXIT_SUCCESS;
