@@ -119,15 +119,28 @@ int sh_execute(char **args)
 
 	for (i = 0; i < sh_num_builtins(); i++) {
 		if (strcmp(args[0], builtin_str[i]) == 0) {
-			return (*builtin_func[i])(args);
+
+			pid_t pid, wpid;
+			int status;
+
+			pid = fork();
+
+			if (pid == 0) {						// Child process
+				// printf("%s : %d\n", "Child Process", getpid());
+				status = (*builtin_func[i])(args);
+				exit(status);
+			} else if (pid < 0) {				// Error forking
+				perror("sh");
+			} else {							// Parent process
+				waitpid(-1, &status, 0);
+				return WEXITSTATUS(status);
+			}
 		}
 	}
 
-	return sh_launch(args);
+	// if not a builtin function, then run as a linux shell command
+	// return sh_launch(args);
 }
-
-
-
 
 #define sh_TOK_BUFSIZE 64
 #define sh_TOK_DELIM " \t\r\n\a"
@@ -211,6 +224,7 @@ void sh_loop(void)
 	commandCount = 0;
 	char *command;
 	do {
+		// printf("%s : %d\n", "Parent", getpid());
 		printf("> ");
 		command = sh_read_line();
 		commands[commandCount] = (char *)malloc(sizeof(*command));
