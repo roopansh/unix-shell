@@ -9,31 +9,48 @@
 
 /*
 	Function Declarations for builtin shell commands:
- */
+*/
 static char ** commands;
 static int commandCount=0;
 int sh_cd(char **args);
 int sh_help(char **args);
 int sh_history(char** args);
 int sh_exit(char **args);
+int sh_issue(char **args);
+
+/*
+	Function Declaration for helper functions:
+*/
+int sh_num_builtins();
+char **sh_split_line(char *line);
+char *sh_read_line(void);
+int sh_launch(char **args);
+int sh_execute(char **args);
+void sh_loop(void);
 
 /*
 	List of builtin commands, followed by their corresponding functions.
- */
+*/
 char *builtin_str[] = {
-	"cd",
 	"help",
+	"cd",
 	"history",
+	"issue",
 	"exit"
 };
 
 int (*builtin_func[]) (char **) = {
-	&sh_cd,
 	&sh_help,
+	&sh_cd,
 	&sh_history,
+	&sh_issue,
 	&sh_exit
 };
 
+
+/*
+	Functions:
+*/
 int sh_num_builtins() {
 	return sizeof(builtin_str) / sizeof(char *);
 }
@@ -41,6 +58,20 @@ int sh_num_builtins() {
 /*
 	Builtin function implementations.
 */
+int sh_help(char **args)
+{
+	int i;
+	printf("Type program names and arguments, and hit enter.\n");
+	printf("The following are built in commands:\n");
+
+	for (i = 0; i < sh_num_builtins(); i++) {
+		printf("  %s\n", builtin_str[i]);
+	}
+
+	// printf("Use the man command for information on other programs.\n");
+	return 1;
+}
+
 int sh_cd(char **args)
 {
 	if (args[1] == NULL) {
@@ -55,7 +86,7 @@ int sh_cd(char **args)
 
 int sh_history(char**args)
 {
-	 if (args[1] == NULL) {
+	if (args[1] == NULL) {
 		fprintf(stderr, "sh: expected argument to \"history\"\n");
 	} else {
 		int j;
@@ -65,17 +96,24 @@ int sh_history(char**args)
 	return 1;
 }
 
-int sh_help(char **args)
+int sh_issue(char **args)
 {
-	int i;
-	printf("Type program names and arguments, and hit enter.\n");
-	printf("The following are built in:\n");
+	if (args[1] == NULL) {
+		fprintf(stderr, "sh: expected argument to \"issue\"\n");
+	} else {
+		int n = atoi(args[1]);
+		if(n <= 0 || n > commandCount){
+			fprintf(stderr, "sh: invalid argument to \"issue\"\n. Argument out of range\n");
+			return 1;
+		}
 
-	for (i = 0; i < sh_num_builtins(); i++) {
-		printf("  %s\n", builtin_str[i]);
+		n--;
+		printf("%s\n\n", commands[n]);
+		char **commandargs = sh_split_line(commands[n]);
+		int status = sh_execute(commandargs);
+		free(commandargs);
+		return status;
 	}
-
-	printf("Use the man command for information on other programs.\n");
 	return 1;
 }
 
@@ -83,6 +121,10 @@ int sh_exit(char **args)
 {
 	return 0;
 }
+
+/*
+	For executing programs
+*/
 int sh_launch(char **args)
 {
 	pid_t pid, wpid;
@@ -139,9 +181,12 @@ int sh_execute(char **args)
 	}
 
 	// if not a builtin function, then run as a linux shell command
-	// return sh_launch(args);
+	return sh_launch(args);
 }
 
+/*
+	Split a line into different words
+*/
 #define sh_TOK_BUFSIZE 64
 #define sh_TOK_DELIM " \t\r\n\a"
 char **sh_split_line(char *line)
@@ -246,7 +291,7 @@ void sh_loop(void)
 	} while (status);
 }
 
- int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	system("clear");
 	sh_loop();
