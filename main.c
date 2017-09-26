@@ -119,10 +119,7 @@ int sh_execute(char **args)
 
 	for (i = 0; i < sh_num_builtins(); i++) {
 		if (strcmp(args[0], builtin_str[i]) == 0) {
-			if(args[0]=="history")
-				return (*builtin_func[i])(args);
-			else
-				return (*builtin_func[i])(args);
+			return (*builtin_func[i])(args);
 		}
 	}
 
@@ -165,15 +162,6 @@ char **sh_split_line(char *line)
 	return tokens;
 }
 
-// char *sh_read_line(void)
-// {
-//   char *line = NULL;
-//   ssize_t bufsize = 0; // have getline allocate a buffer for us
-//   getline(&line, &bufsize, stdin);
-//   return line;
-// }
-
-
 #define sh_RL_BUFSIZE 1024
 char *sh_read_line(void)
 {
@@ -212,12 +200,14 @@ char *sh_read_line(void)
 	}
 }
 
+#define sh_HIST_BUFFER 10
 void sh_loop(void)
 {
 	char *line;
 	char **args;
 	int status;
-	commands = (char **)malloc(sizeof(char *)*10);
+	int histSize = sh_HIST_BUFFER;
+	commands = (char **)malloc(sizeof(char *)*histSize);
 	commandCount = 0;
 	char *command;
 	do {
@@ -230,12 +220,21 @@ void sh_loop(void)
 		free(args);
 		free(command);
 		commandCount++;
+
+		if(commandCount >= histSize){
+			histSize += sh_HIST_BUFFER;
+			commands = realloc(commands, sizeof(char *) * histSize);
+			if(!commands){
+				fprintf(stderr, "%s\n", "sh: allocation error");
+				exit(EXIT_FAILURE);
+			}
+		}
 	} while (status);
 }
 
  int main(int argc, char **argv)
 {
-	
+	system("clear");
 	sh_loop();
 
 	return EXIT_SUCCESS;
