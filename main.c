@@ -15,8 +15,9 @@ static int commandCount=0;
 int sh_cd(char **args);
 int sh_help(char **args);
 int sh_history(char** args);
-int sh_exit(char **args);
 int sh_issue(char **args);
+int sh_rm(char **args);
+int sh_exit(char **args);
 
 /*
 	Function Declaration for helper functions:
@@ -36,6 +37,7 @@ char *builtin_str[] = {
 	"cd",
 	"history",
 	"issue",
+	"rm",
 	"exit"
 };
 
@@ -44,6 +46,7 @@ int (*builtin_func[]) (char **) = {
 	&sh_cd,
 	&sh_history,
 	&sh_issue,
+	&sh_rm,
 	&sh_exit
 };
 
@@ -113,6 +116,22 @@ int sh_issue(char **args)
 		int status = sh_execute(commandargs);
 		free(commandargs);
 		return status;
+	}
+	return 1;
+}
+
+int sh_rm(char **args)
+{
+	if (args[1] == NULL) {
+		fprintf(stderr, "sh: expected file name to \"rm\"\n");
+	} else {
+		char filename[2048];
+		getcwd(filename, sizeof(filename));
+		strcat(filename, "/"); 
+		strcat(filename, args[1]); 
+		if (unlink(filename) != 0) {
+			perror("sh");
+		}
 	}
 	return 1;
 }
