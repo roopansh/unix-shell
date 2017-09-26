@@ -92,8 +92,9 @@ int sh_history(char**args)
 	if (args[1] == NULL) {
 		fprintf(stderr, "sh: expected argument to \"history\"\n");
 	} else {
-		int j;
-		for(j=0;j<atoi(args[1]) && j < commandCount;j++)
+		int j,i = commandCount - atoi(args[1]); //printing most recent args[1] no. of commands
+		if(i<0)i=0;
+		for(j=i;j < commandCount;j++)
 			printf("%d\t%s\n", j+1, commands[j]);
 	}
 	return 1;
@@ -179,7 +180,11 @@ int sh_execute(char **args)
 	}
 
 	for (i = 0; i < sh_num_builtins(); i++) {
-		if (strcmp(args[0], builtin_str[i]) == 0) {
+		if(strcmp(args[0], "cd") == 0)
+		{
+			return (*builtin_func[1])(args);
+		}
+		else if (strcmp(args[0], builtin_str[i]) == 0) {
 
 			pid_t pid, wpid;
 			int status;
