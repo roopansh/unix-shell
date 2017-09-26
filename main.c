@@ -1,15 +1,11 @@
-#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <string.h>
 #include <malloc.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <ftw.h>
 
 
 /*
@@ -22,7 +18,7 @@ int sh_help(char **args);
 int sh_history(char** args);
 int sh_issue(char **args);
 int sh_rm(char **args);
-int sh_ls(char **args);
+int sh_rmexcept(char **args);
 int sh_exit(char **args);
 
 /*
@@ -44,7 +40,7 @@ char *builtin_str[] = {
 	"history",
 	"issue",
 	"rm",
-	"ls",
+	"rmexcept",
 	"exit"
 };
 
@@ -54,7 +50,7 @@ int (*builtin_func[]) (char **) = {
 	&sh_history,
 	&sh_issue,
 	&sh_rm,
-	&sh_ls,
+	&sh_rmexcept,
 	&sh_exit
 };
 
@@ -97,17 +93,14 @@ int sh_cd(char **args)
 
 int sh_history(char**args)
 {
-	int j,i;
-	
-	if (args[1] == NULL) {		// print all the commands issued by the user.
-		i = 0;
-	} else {					//printing most recent args[1] no. of commands
-		i = commandCount - atoi(args[1]);
-		if(i < 0)	i = 0;
+	if (args[1] == NULL) {
+		fprintf(stderr, "sh: expected argument to \"history\"\n");
+	} else {
+		int j,i = commandCount - atoi(args[1]); //printing most recent args[1] no. of commands
+		if(i<0)i=0;
+		for(j=i;j < commandCount;j++)
+			printf("%d\t%s\n", j+1, commands[j]);
 	}
-
-	for(j = i; j < commandCount; j++)
-		printf("\t%d\t%s\n", j+1, commands[j]);
 	return 1;
 }
 
@@ -132,87 +125,59 @@ int sh_issue(char **args)
 	return 1;
 }
 
-
-int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
-{
-    int rv = remove(fpath);
-
-    if (rv)
-        perror(fpath);
-
-    return rv;
-}
-
-int unlink_cb_verb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
-{
-    int rv = remove(fpath);
-
-    if (rv)
-        perror(fpath);
-
-    printf("%s\n", fpath);
-
-    return rv;
-}
-
 int sh_rm(char **args)
 {
-	/* Check for options used. */
-	int argc = 1;
-	bool RECURSIVE_FLAG = false,
-		VERBOSE_FLAG = false,
-		FORCE_FLAG = false;
-	char filename[2048];
-
-	while(args[argc] != NULL)
-	{
-		if (strcmp(args[argc], "-r") == 0) {
-			RECURSIVE_FLAG = true;
-		} else if (strcmp(args[argc], "-f") == 0) {
-			FORCE_FLAG = true;
-		} else if (strcmp(args[argc], "-v") == 0) {
-			VERBOSE_FLAG = true;
-		} else {
-			// filename = (char *)malloc(sizeof(char)*2048);
-			getcwd(filename, sizeof(filename));
-			strcat(filename, "/"); 
-			strcat(filename, args[argc]); 			
-		}
-		argc++;
-	}
-
-	if (filename == NULL) {
-		fprintf(stderr, "sh: expected a file name to \"rm\"\n");
-	} else if (!RECURSIVE_FLAG) {		// deleting a single file
+	if (args[1] == NULL) {
+		fprintf(stderr, "sh: expected file name to \"rm\"\n");
+	} else {
+		char filename[2048];
+		getcwd(filename, sizeof(filename));
+		strcat(filename, "/"); 
+		strcat(filename, args[1]); 
 		if (unlink(filename) != 0) {
 			perror("sh");
-			return 1;
 		}
-		if (VERBOSE_FLAG)	printf("%s\n", filename);
-	} else {							// deleting a directory
-		if(VERBOSE_FLAG)	nftw(filename, unlink_cb_verb, 64, FTW_DEPTH | FTW_PHYS);
-		else	nftw(filename, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 	}
 	return 1;
 }
 
-int sh_ls(char **args)
+int sh_rmexcept(char **args)
 {
-	struct dirent **namelist;
-	int n = scandir(".", &namelist, NULL, alphasort);
-	if(n < 0)
-	{
-		perror("sh");
-	}
-	else
-	{
-		while (n--)
-		{
-			printf("%s\n", namelist[n]->d_name);
-			free(namelist[n]);
-		}
-		free(namelist);
-	}
+	//int size = sizeof(args)/sizeof(args[0]);
+	int j,i = 0,flag=0;
+	while(args[i]!=NULL)i++;
+
+	DIR *d;
+    struct dirent *dir;
+    d = opendir(".");
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+        	for(j=1;j<i;j++)
+        	{
+        		if(strcmp(args[j], dir->d_name) == 0)
+        		{
+        			flag=0;
+        			break;
+        		}
+        		else
+        			flag=1;
+        	}
+        	
+        	if(flag==1)
+        	{
+        		char filename[2048];
+				getcwd(filename, sizeof(filename));
+				strcat(filename, "/"); 
+				strcat(filename, dir->d_name); 
+				if (unlink(filename) != 0) {
+					perror("sh");
+				}	
+        	}
+        }
+        closedir(d);
+    }
 	return 1;
 }
 
@@ -262,10 +227,6 @@ int sh_execute(char **args)
 		if(strcmp(args[0], "cd") == 0)
 		{
 			return (*builtin_func[1])(args);
-		}
-		else if (strcmp(args[0], "rm") == 0)
-		{
-			return (*builtin_func[4])(args);	
 		}
 		else if (strcmp(args[0], builtin_str[i]) == 0) {
 
