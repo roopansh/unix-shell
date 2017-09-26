@@ -1,11 +1,15 @@
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <malloc.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ftw.h>
 
 
 /*
@@ -93,14 +97,17 @@ int sh_cd(char **args)
 
 int sh_history(char**args)
 {
-	if (args[1] == NULL) {
-		fprintf(stderr, "sh: expected argument to \"history\"\n");
-	} else {
-		int j,i = commandCount - atoi(args[1]); //printing most recent args[1] no. of commands
-		if(i<0)i=0;
-		for(j=i;j < commandCount;j++)
-			printf("%d\t%s\n", j+1, commands[j]);
+	int j,i;
+	
+	if (args[1] == NULL) {		// print all the commands issued by the user.
+		i = 0;
+	} else {					//printing most recent args[1] no. of commands
+		i = commandCount - atoi(args[1]);
+		if(i < 0)	i = 0;
 	}
+
+	for(j = i; j < commandCount; j++)
+		printf("\t%d\t%s\n", j+1, commands[j]);
 	return 1;
 }
 
@@ -125,18 +132,66 @@ int sh_issue(char **args)
 	return 1;
 }
 
+
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    return rv;
+}
+
+int unlink_cb_verb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+    int rv = remove(fpath);
+
+    if (rv)
+        perror(fpath);
+
+    printf("%s\n", fpath);
+
+    return rv;
+}
+
 int sh_rm(char **args)
 {
-	if (args[1] == NULL) {
-		fprintf(stderr, "sh: expected file name to \"rm\"\n");
-	} else {
-		char filename[2048];
-		getcwd(filename, sizeof(filename));
-		strcat(filename, "/"); 
-		strcat(filename, args[1]); 
+	/* Check for options used. */
+	int argc = 1;
+	bool RECURSIVE_FLAG = false,
+		VERBOSE_FLAG = false,
+		FORCE_FLAG = false;
+	char filename[2048];
+
+	while(args[argc] != NULL)
+	{
+		if (strcmp(args[argc], "-r") == 0) {
+			RECURSIVE_FLAG = true;
+		} else if (strcmp(args[argc], "-f") == 0) {
+			FORCE_FLAG = true;
+		} else if (strcmp(args[argc], "-v") == 0) {
+			VERBOSE_FLAG = true;
+		} else {
+			// filename = (char *)malloc(sizeof(char)*2048);
+			getcwd(filename, sizeof(filename));
+			strcat(filename, "/"); 
+			strcat(filename, args[argc]); 			
+		}
+		argc++;
+	}
+
+	if (filename == NULL) {
+		fprintf(stderr, "sh: expected a file name to \"rm\"\n");
+	} else if (!RECURSIVE_FLAG) {		// deleting a single file
 		if (unlink(filename) != 0) {
 			perror("sh");
+			return 1;
 		}
+		if (VERBOSE_FLAG)	printf("%s\n", filename);
+	} else {							// deleting a directory
+		if(VERBOSE_FLAG)	nftw(filename, unlink_cb_verb, 64, FTW_DEPTH | FTW_PHYS);
+		else	nftw(filename, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 	}
 	return 1;
 }
@@ -207,6 +262,10 @@ int sh_execute(char **args)
 		if(strcmp(args[0], "cd") == 0)
 		{
 			return (*builtin_func[1])(args);
+		}
+		else if (strcmp(args[0], "rm") == 0)
+		{
+			return (*builtin_func[4])(args);	
 		}
 		else if (strcmp(args[0], builtin_str[i]) == 0) {
 
