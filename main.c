@@ -7,9 +7,11 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <ftw.h>
+
 
 /*
 	Function Declarations for builtin shell commands:
@@ -254,6 +256,12 @@ int sh_exit(char **args) {
 }
 
 /*
+	Signal Handler for killing a process after n seconds.
+*/
+static void sig_handler(int signo) {
+}
+
+/*
 	For executing programs
 */
 int sh_launch(char **args) {
@@ -263,6 +271,28 @@ int sh_launch(char **args) {
 	pid = fork();
 	if (pid == 0) {
 		// Child process
+
+		int argc = 1;
+		bool KILL_FLAG = false;
+		int killTime = 0;
+
+		while(args[argc] != NULL) {
+			if(strcmp(args[argc], "--tkill") == 0) {
+				KILL_FLAG = true;
+				killTime = (args[argc+1] == NULL) ? 0 : atoi(args[argc+1]);			// if invalid conversion, then killTime = 0
+				// printf("%s\t:\t%d\n", "KillTime", killTime);
+				break;
+			}
+			argc++;
+		}
+
+		if (KILL_FLAG) {
+			signal(SIGALRM, sig_handler);
+
+			// Set a timer to send the SIGALRM after specified time(in seconds)
+			alarm(killTime);
+		}
+
 		if (execvp(args[0], args) == -1) {
 			perror("sh");
 		}
