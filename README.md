@@ -29,7 +29,7 @@ Removes all the files in the current directory except the spefied files.
 #### ``` > history [n]```
 Displays the 'n' recent commands on the screen. If n is not spefied, then all the commands are displayed.
 
-#### ``` > issue [n]```
+#### ``` > issue n```
 Runs the n-th command again. Use the ```history``` command  to check the number of the command.
 
 #### ``` > program_name [< input_file] [> output_file] [--tkill n]```
@@ -39,7 +39,7 @@ This will run the specified program. It supports the redirection operators ```> 
 #### ``` > exit```
 Exits the terminal.
 
-## Special Note
+## Special Note 
 1) Implemented all the features asked in the question statement.
 2) Every command of the user is run as a separate thread forked by the main thread.
 3) The memory used by history of commands is allocated dynamically in chunks of 10 commands. This is memory effecient and stores the complete history.
