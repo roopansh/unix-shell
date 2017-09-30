@@ -8,8 +8,8 @@ IIT Guwahati, India : CS-341 Assignment task - Make a UNIX Shell with some basic
     > <command-to-run>
     
     
-## Implemented Functionalities
-#### ```> hlep```
+## Implemented Built-in Functions
+#### ```> help```
 Displays the list of in-built functionalities.
 
 #### ``` > cd [path]```
@@ -24,18 +24,17 @@ Removes the specified files. Use the ```-r``` flag to remove a directory.
 
 #### ``` > rmexcept [[file1] [file2]....]```
 Removes all the files in the current directory except the spefied files.
-
 **NOTE:- It doesn't delete the directories in the current directory.**
 
 #### ``` > history [n]```
-Displays the n recent commands on the screen. If n is not spefied, then all the commands are displayed.
+Displays the 'n' recent commands on the screen. If n is not spefied, then all the commands are displayed.
 
 #### ``` > issue [n]```
-Runs the n-th recent command again. ```history``` command displays the number along with the command to issue.
+Runs the n-th command again. Use the ```history``` command  to check the number of the command.
 
 #### ``` > program_name [< input_file] [> output_file] [--tkill n]```
 This will run the specified program. It supports the redirection operators ```> output_file``` and ```< input_file```.
-**Note :- ```--tkill n``` is used to spefiy the time(in seconds) after which the program is terminated irrespective of wether the execution completed or not.**
+**Note :- ```--tkill n``` is used to specify the time(in seconds) after which the program is terminated irrespective of whether the execution of child thread is completed or not.**
 
 #### ``` > exit```
 Exits the terminal.
