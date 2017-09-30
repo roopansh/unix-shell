@@ -50,16 +50,18 @@ Exits the terminal.
 There are no bugs.
 
 ## Project Authors
-Abhishek Goyal
-Roll No - 150101002
-IIT Guwahati (CSE)
+    Abhishek Goyal
+    Roll No - 150101002
+    IIT Guwahati (CSE)
 
-Rohan Agarwal
-Roll No - 150101052
-IIT Guwahati (CSE)
 
-Roopansh Bansal
-Roll No - 150101053
-IIT Guwahati (CSE)
+    Rohan Aggarwal
+    Roll No - 150101052
+    IIT Guwahati (CSE)
+
+
+    Roopansh Bansal
+    Roll No - 150101053
+    IIT Guwahati (CSE)
 
 **Contribution of Each member :- Each member of the group was present during the sessions and everyone contributed together as a team to the project.**
