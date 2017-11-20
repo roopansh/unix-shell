@@ -32,7 +32,7 @@ Displays the 'n' recent commands on the screen. If n is not spefied, then all th
 #### ``` > issue n```
 Runs the n-th command again. Use the ```history``` command  to check the number of the command.
 
-#### ``` > program_name [< input_file] [> output_file] [--tkill n]```
+#### ``` > program_name [--tkill n]```
 This will run the specified program. It supports the redirection operators ```> output_file``` and ```< input_file```.
 **Note :- ```--tkill n``` is used to specify the time(in seconds) after which the program is terminated irrespective of whether the execution of child thread is completed or not.**
 
@@ -63,5 +63,3 @@ There are no bugs.
     Roopansh Bansal
     Roll No - 150101053
     IIT Guwahati (CSE)
-
-**Contribution of Each member :- Each member of the group was present during the sessions and everyone contributed together as a team to the project.**
